@@ -1108,7 +1108,7 @@ private[akka] class ActorSystemImpl(
     if (settings.LogDeadLetters > 0)
       logDeadLetterListener = Some(systemActorOf(Props(new DeadLetterListener), "deadLetterListener"))
     eventStream.startUnsubscriber()
-    checkLicenseKey()
+//    checkLicenseKey()
     ManifestInfo(this).checkSameVersion("Akka", allModules, logWarning = true)
     if (!terminating)
       loadExtensions()
