@@ -16,7 +16,7 @@ permissions:
 jobs:
   publish-actor-typed:
     name: Publish akka-actor-typed JAR
-    runs-on: Akka-Default
+    runs-on: ubuntu-latest
     if: github.repository == 'cheatmenot/akka'
     steps:
       - name: Checkout

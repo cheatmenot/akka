@@ -1,0 +1,115 @@
+name: Manual Publish akka-actor-typed
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 2.10.9)'
+        required: false
+        type: string
+        default: 'current'
+      scala_versions:
+        description: 'Scala versions to build (comma-separated: 2.13,3)'
+        required: false
+        type: string
+        default: '2.13,3'
+      run_mima:
+        description: 'Run MiMa binary compatibility checks'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish-actor-typed:
+    name: Manual Publish akka-actor-typed JAR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
+        with:
+          jvm: temurin:1.11.0.17
+
+      - name: Cache SBT
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.sbt
+            ~/.coursier/cache
+            ~/.cache/coursier
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt', '**/build.properties', '**/Dependencies.scala') }}
+          restore-keys: |
+            ${{ runner.os }}-sbt-
+
+      - name: Display build information
+        run: |
+          echo "Building with the following configuration:"
+          echo "- Version: ${{ github.event.inputs.version || 'current' }}"
+          echo "- Scala versions: ${{ github.event.inputs.scala_versions || '2.13,3' }}"
+          echo "- Run MiMa: ${{ github.event.inputs.run_mima || 'true' }}"
+          echo "- Repository: ${{ github.repository }}"
+          echo "- Branch/Tag: ${{ github.ref_name }}"
+
+      - name: Run MiMa checks (if enabled)
+        if: ${{ github.event.inputs.run_mima == 'true' }}
+        run: |
+          echo "Running MiMa binary compatibility checks..."
+          if [[ "${{ github.event.inputs.scala_versions }}" == *"2.13"* ]]; then
+            echo "Running MiMa for Scala 2.13.15"
+            sbt "++2.13.15 akka-actor-typed/mimaReportBinaryIssues"
+          fi
+          if [[ "${{ github.event.inputs.scala_versions }}" == *"3"* ]]; then
+            echo "Running MiMa for Scala 3.3.4"
+            sbt "++3.3.4 akka-actor-typed/mimaReportBinaryIssues"
+          fi
+
+      - name: Publish akka-actor-typed
+        run: |
+          sudo apt-get install graphviz
+          echo "Publishing akka-actor-typed for selected Scala versions..."
+          
+          if [[ "${{ github.event.inputs.scala_versions }}" == *"2.13"* ]]; then
+            echo "Publishing for Scala 2.13.15"
+            sbt "++2.13.15 akka-actor-typed/publish"
+          fi
+          
+          if [[ "${{ github.event.inputs.scala_versions }}" == *"3"* ]]; then
+            echo "Publishing for Scala 3.3.4"
+            sbt "++3.3.4 akka-actor-typed/publish"
+          fi
+        env:
+          GITHUB_MAVEN_URL: "https://maven.pkg.github.com/eycads/eycads-maven-public"
+          GITHUB_MAVEN_USERNAME: "cheatmenot"
+          GITHUB_MAVEN_TOKEN: ${{ secrets.MAVEN_TOKEN }}
+
+      - name: Verify published artifacts
+        run: |
+          echo "✅ Successfully published akka-actor-typed!"
+          echo ""
+          echo "Published for Scala versions: ${{ github.event.inputs.scala_versions || '2.13,3' }}"
+          echo "Version: ${{ github.event.inputs.version || 'current' }}"
+          echo ""
+          echo "Artifacts should be available at:"
+          echo "📦 https://maven.pkg.github.com/eycads/eycads-maven-public"
+          echo ""
+          echo "To use in your project, add to build.sbt:"
+          echo 'libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % "VERSION"'
+
+      - name: Log failure details
+        if: ${{ failure() }}
+        run: |
+          echo "::error::Manual publishing of akka-actor-typed JAR failed!"
+          echo "Repository: ${{github.repository}}"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "Job: ${{ github.job }}"
+          echo "Run ID: ${{github.run_id}}"
+          echo "Run URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"
+          echo ""
+          echo "Check the logs above for specific error details."
