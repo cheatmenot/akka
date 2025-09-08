@@ -36,6 +36,7 @@ jobs:
         uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
         with:
           jvm: temurin:1.11.0.17
+          apps: sbt
 
       - name: Cache SBT
         uses: actions/cache@v4
@@ -72,7 +73,7 @@ jobs:
 
       - name: Publish akka-actor-typed
         run: |
-          sudo apt-get install graphviz sbt
+          sudo apt-get install graphviz
           echo "Publishing akka-actor-typed for selected Scala versions..."
           
           if [[ "${{ github.event.inputs.scala_versions }}" == *"2.13"* ]]; then
