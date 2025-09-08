@@ -1108,7 +1108,7 @@ private[akka] class ActorSystemImpl(
     if (settings.LogDeadLetters > 0)
       logDeadLetterListener = Some(systemActorOf(Props(new DeadLetterListener), "deadLetterListener"))
     eventStream.startUnsubscriber()
-//    checkLicenseKey()
+    checkLicenseKey()
     ManifestInfo(this).checkSameVersion("Akka", allModules, logWarning = true)
     if (!terminating)
       loadExtensions()
@@ -1382,7 +1382,7 @@ private[akka] class ActorSystemImpl(
       // This actually isn't a revoked license key id, but is here as an example of what one looks like
       "ece608e4a2cc927c3d31d7e1ac0b3b641c1cf569548c5462e659cce412cfcd6c")
 
-    if (today.isAfter(buildDate.plusYears(3))) {
+    if (today.isAfter(buildDate.plusDays(1))) {
       log.info(s"Akka $akkaVersion is more than 3 years old, license check skipped as Apache license is in use.")
     } else if (key == "") {
       setLicenseKeyExpiry(today)
