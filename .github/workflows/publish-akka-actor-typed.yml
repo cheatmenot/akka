@@ -1,0 +1,73 @@
+name: Publish akka-actor-typed
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 2.10.9)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish-actor-typed:
+    name: Publish akka-actor-typed JAR
+    runs-on: ubuntu-latest
+    if: github.repository == 'cheatmenot/akka'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
+        with:
+          jvm: temurin:1.11.0.17
+
+      - name: Cache SBT
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.sbt
+            ~/.coursier/cache
+            ~/.cache/coursier
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt', '**/build.properties', '**/Dependencies.scala') }}
+          restore-keys: |
+            ${{ runner.os }}-sbt-
+
+      - name: Publish akka-actor-typed for Scala 2.13 and Scala 3
+        run: |
+          sudo apt-get install graphviz
+          # Run MiMa checks first
+          sbt "++2.13.15 akka-actor-typed/mimaReportBinaryIssues"
+          sbt "++3.3.4 akka-actor-typed/mimaReportBinaryIssues"
+          # Publish for both Scala versions to GitHub Maven
+          sbt "++2.13.15 akka-actor-typed/publish"
+          sbt "++3.3.4 akka-actor-typed/publish"
+        env:
+          GITHUB_MAVEN_URL: "https://maven.pkg.github.com/eycads/eycads-maven-public"
+          GITHUB_MAVEN_USERNAME: "cheatmenot"
+          GITHUB_MAVEN_TOKEN: ${{ secrets.MAVEN_TOKEN }}
+
+      - name: Verify published artifacts
+        run: |
+          echo "Published akka-actor-typed for:"
+          echo "- Scala 2.13.15"
+          echo "- Scala 3.3.4"
+          echo "Artifacts should be available at:"
+          echo "- https://maven.pkg.github.com/eycads/eycads-maven-public"
+
+      - name: Log failure details
+        if: ${{ failure() }}
+        run: |
+          echo "::error::Publishing akka-actor-typed JAR failed!"
+          echo "Repository: ${{github.repository}}"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "Job: ${{ github.job }}"
+          echo "Run ID: ${{github.run_id}}"
+          echo "Run URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}"

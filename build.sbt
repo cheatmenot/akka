@@ -434,6 +434,7 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
   .dependsOn(actor, slf4j)
   .settings(AutomaticModuleName.settings("akka.actor.typed"))
   .settings(Dependencies.actorTyped)
+  .enablePlugins(GitHubPublish)
   .settings(initialCommands :=
     """
       import akka.actor.typed._
