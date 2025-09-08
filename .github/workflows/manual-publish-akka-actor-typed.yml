@@ -72,7 +72,7 @@ jobs:
 
       - name: Publish akka-actor-typed
         run: |
-          sudo apt-get install graphviz
+          sudo apt-get install graphviz sbt
           echo "Publishing akka-actor-typed for selected Scala versions..."
           
           if [[ "${{ github.event.inputs.scala_versions }}" == *"2.13"* ]]; then
